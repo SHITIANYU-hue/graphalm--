@@ -42,16 +42,38 @@ merged_transactions, illicit_transactions, licit_transactions = extract_transact
 # Initialize a pre-trained LLM using Huggingface's transformers
 llm_model = pipeline('text-generation', model='gpt-4')
 
-# Generate context based on past transaction queries and current data
-def generate_llm_context(past_queries, current_data_summary):
-    prompt = f"Based on the past queries: {past_queries}, and the summary of the current dataset: {current_data_summary}, suggest features to prioritize for detecting suspicious transactions."
-    context_output = llm_model(prompt, max_length=150, num_return_sequences=1)
+# Generate context based on past transaction queries, current data, and memory buffer
+def generate_llm_context(past_queries, current_data_summary, memory_buffer):
+    prompt = f"""
+    You are analyzing blockchain transaction data to detect patterns of illicit activity. Here is a summary of past queries and their outcomes:
+    
+    Previous Search Logs:
+    {past_queries}
+
+    Memory Buffer (Key historical context):
+    {memory_buffer}
+
+    Current Search Context (Current query focusing on recent anomalies in transaction behavior):
+    {current_data_summary}
+
+    Based on this information, suggest advanced features to prioritize for detecting suspicious transactions. Generate a hypothesis on suspicious patterns, considering past queries and results, and propose new query suggestions to enhance the detection of high-risk wallets and illicit activity.
+    """
+    
+    context_output = llm_model(prompt, max_length=400, num_return_sequences=1)
     return context_output[0]['generated_text']
 
 # Example Usage
-past_queries = ["High-value transactions", "Suspicious wallet activity"]
+past_queries = [
+    "Query for high-volume transactions over a short period.",
+    "Search for transactions linked to wallets with previous criminal ties."
+]
 current_data_summary = merged_transactions.describe()
-context = generate_llm_context(past_queries, current_data_summary)
+memory_buffer = [
+    "Queried high-volume transactions and detected several illicit entities.",
+    "Queried suspicious wallet addresses and flagged wallets as high-risk due to frequent small-value transactions."
+]
+
+context = generate_llm_context(past_queries, current_data_summary, memory_buffer)
 print("Generated LLM Context: ", context)
 
 
